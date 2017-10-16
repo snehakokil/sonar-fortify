@@ -1,0 +1,63 @@
+<%
+	vulnerabilities_measure = measure('Fortify-findings')
+	project_key = @project.key
+
+	if vulnerabilities_measure
+%>
+<div class="yui-g">
+	<div class="yui-u first">
+		<div class="dashbox">
+			<p class="title" style="margin-bottom: 5px;">Fortify Vulnerabilities</a></p>
+			<table>
+			<%
+			severity_order = {
+				"BLOCKER" => 0,
+				"CRITICAL" => 1,
+				"MAJOR" => 2,
+				"MINOR" => 3,
+				"INFO" => 4
+			}
+			vulns = []
+			vulnerabilities_measure.data.split(";").each do |vulnerability_with_size|
+				vulnerability_with_size_array = vulnerability_with_size.split("=")
+				severity = vulnerability_with_size_array[0]
+				severity_icon_class = "icon-severity-#{severity.downcase}"
+				count = vulnerability_with_size_array[1]
+				vulns[severity_order[severity]] = [severity, count, severity_icon_class]
+			end
+			
+			vulns.each do |vulnerability_with_size|
+				(severity, count, severity_icon_class) = vulnerability_with_size
+			%>
+			<tr>
+				<td align="left">
+					<i class="<%= severity_icon_class -%>"></i>
+					<%= severity -%>					
+				</td>
+				<td align="right" style="padding-left: 10px">
+					<%
+					vuln_link = "/component_issues/index?id=#{project_key}#resolved=false|tags=fortify-security|severities=#{severity}"
+					%>
+					<a href="<%= vuln_link -%>">
+					<%= count -%>
+					</a>
+				</td>
+			</tr>
+			<% end %>
+			</table>
+		</div>
+	</div>
+    <div class="dashbox">
+        <h3>PDF Report</h3>
+        <%
+          filename = Rails.root.join('fortify-pdf-files', @project.key.gsub(':', '-').gsub('.','-') + '.pdf')
+          if File.exists?(filename)
+        %>
+        <h4>Get Fortify Vulnerabilities in a PDF</h4>
+        <a href="<%= ApplicationController.root_context -%>/sonarqubefortifyplugin/get?resource=<%= @snapshot.project_id %>">Download</a>
+        <% else %>
+        <h4>Report is not available (<%= filename -%>). At least one analysis is required after installing the plugin</h4>
+        <% end %>
+    </div>
+</div>
+<% end %>
